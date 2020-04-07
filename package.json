@@ -1,10 +1,13 @@
 {
   "name": "protonvpn-acc-gen",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "ProtonVPN account generator",
-  "main": "app.js",
+  "main": "./bin/app.js",
   "scripts": {
-    "start": "node app/app.js"
+    "start": "node bin/app.js"
+  },
+  "bin": {
+    "light-scraper": "./bin/app.js"
   },
   "author": "leandev",
   "license": "ISC",

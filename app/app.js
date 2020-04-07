@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 const puppeteer = require('puppeteer');
 const inquirer = require('inquirer');
 const chalk = require('chalk');
