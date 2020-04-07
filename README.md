@@ -15,7 +15,7 @@ This is an unofficial tool and is not affiliated in any way with **Proton Techno
 
 Install and use with `npm` or `npx`
 ```sh
-$ npm i protonvpn-acc-gen
+$ npm i -g protonvpn-acc-gen
 $ protonvpn-acc-gen
 ```
 ```sh
