@@ -7,24 +7,37 @@ const Table = require('cli-table');
 
 const func = require('./functions.js');
 
-const mailsac_url = 'https://mailsac.com';
+const guerrillamail_url = 'https://www.guerrillamail.com/en';
 const proton_url = 'https://account.protonvpn.com/signup';
 
 let proxy_url;
 
 let options = {
-  confirmation:{
-    type:"confirm",
-    name:"confirmation",
-    message:"Generate a new ProtonVPN account?"
+  confirmation: {
+    type: "confirm",
+    name: "confirmation",
+    message: "Generate a new ProtonVPN account?"
   }
 }
 
-const {version} = require('./../package.json');
-console.log(boxen('ProtonVPN Generator ' + version, {padding: 1, margin: 1, borderStyle: 'double'}));
+const { version } = require('./../package.json');
+console.log(boxen('ProtonVPN Generator ' + version, { padding: 1, margin: 1, borderStyle: 'double' }));
 console.log(chalk.bold('Coded by ' + chalk.magenta('leandev')));
 console.log(chalk.bold('More info: ' + chalk.cyan('http://l34nd3v.com')));
 console.log(chalk.bold(chalk.red('This is an unofficial tool and is not affiliated with Proton Technologies AG\n')));
+
+const getAuthCode = () => {
+  const all_emails = Array.from(document.querySelector('#email_list').querySelectorAll('tr'))
+  for (const email of all_emails) {
+    const body = email.querySelector('.email-excerpt').innerText
+    if (body.includes('Your Proton verification code is: ')) {
+      return body.replace('Your Proton verification code is: ', '')
+    }
+    else {
+      return false
+    }
+  }
+}
 
 async function createAccount() {
 
@@ -37,37 +50,47 @@ async function createAccount() {
     }
   });
 
-  const browser = await puppeteer.launch();
+  const browser = await puppeteer.launch({
+    args: ['--disable-web-security', '--disable-features=IsolateOrigins,site-per-process', '--disable-dev-shm-usage']
+  });
 
   await console.log(chalk.bold(chalk.cyan('i ') + 'Generating your account...'));
 
-  let page_mailsac = await browser.newPage();
+  const page_guerrillamail = await browser.newPage();
 
-  await page_mailsac.goto(mailsac_url);
+  await page_guerrillamail.goto(guerrillamail_url);
+  await page_guerrillamail.click('#use-alias')
 
-  await page_mailsac.waitForSelector('body > div > div.container-fluid > div:nth-child(1) > div.col-sm-5.align-center > div > input');
-  await page_mailsac.type('body > div > div.container-fluid > div:nth-child(1) > div.col-sm-5.align-center > div > input', user);
-
-  await page_mailsac.click('body > div > div.container-fluid > div:nth-child(1) > div.col-sm-5.align-center > div > button');
-
-  let mail = user + '@mailsac.com';
-
+  await page_guerrillamail.waitForSelector('#email-widget');
+  const mail = await page_guerrillamail.evaluate(() => document.querySelector('#email-widget').innerText);
   const page_proton = await browser.newPage();
   await page_proton.goto(proton_url);
 
-  await page_proton.waitForSelector('body > div.app-root > main > main > div > div:nth-child(5) > div:nth-child(1) > div.flex-item-fluid-auto.pt1.pb1.flex.flex-column > button').then(() => {}).catch(e => {
+  await page_proton.waitForSelector('body > div.app-root > main > main > div > div:nth-child(5) > div:nth-child(1) > div.flex-item-fluid-auto.pt1.pb1.flex.flex-column > button').then(() => { }).catch(e => {
     console.log(chalk.bold(chalk.red('X ') + 'Selector error'));
     browser.close();
   });
 
   await page_proton.click('body > div.app-root > main > main > div > div:nth-child(5) > div:nth-child(1) > div.flex-item-fluid-auto.pt1.pb1.flex.flex-column > button');
 
-  await page_proton.type('#username', user);
-  await page_proton.type('#password', pasw);
-  await page_proton.type('#passwordConfirmation', pasw);
-  await page_proton.type('#email', mail);
+  const all_iframe_elements = await page_proton.$$('iframe');
 
-  await page_proton.click('body > div.app-root > main > main > div > div.pt2.mb2 > div > div:nth-child(1) > form > div:nth-child(3) > div > button');
+  const username_iframe_element = all_iframe_elements[0];
+  const username_iframe = await username_iframe_element.contentFrame();
+  await username_iframe.waitForSelector('#username');
+  const username_element = await username_iframe.$('#username');
+
+  const email_iframe_element = all_iframe_elements[1];
+  const email_iframe = await email_iframe_element.contentFrame();
+  const email_element = await email_iframe.$('#email');
+
+  await username_element.type(user);
+  await page_proton.type('#password.pm-field', pasw);
+  await page_proton.type('#passwordConfirmation', pasw);
+  await email_element.type(mail, { delay: 10 }); // Added delay because it failed to write
+  // the correct email
+
+  await page_proton.click('body > div > main > main > div > div.pt2.mb2 > div > div:nth-child(1) > form > div:nth-child(5) > div > button');
 
   await page_proton.waitForSelector('body > div.app-root > main > main > div > div.pt2.mb2 > div > div.w100 > div:nth-child(2) > div > div > div:nth-child(2) > form > div:nth-child(2) > button').catch(e => {
     console.log(chalk.bold(chalk.red('X ') + 'Selector error'));
@@ -76,18 +99,11 @@ async function createAccount() {
 
   await page_proton.click('body > div.app-root > main > main > div > div.pt2.mb2 > div > div.w100 > div:nth-child(2) > div > div > div:nth-child(2) > form > div:nth-child(2) > button');
 
-  await page_mailsac.bringToFront();
+  await page_guerrillamail.bringToFront();
 
-  setTimeout(async () => {await page_mailsac.goto(mailsac_url + '/inbox/' + mail)}, 20000);
+  await page_guerrillamail.waitForFunction(getAuthCode)
 
-  await page_mailsac.waitForSelector('body > div > div.container-fluid > div.ng-scope > div > div > div > table > tbody > tr.clickable.ng-scope').catch(e => {
-    console.log(chalk.bold(chalk.red('X ') + 'Selector error'));
-    browser.close();
-  });
-
-  await page_mailsac.click('body > div > div.container-fluid > div.ng-scope > div > div > div > table > tbody > tr.clickable.ng-scope')
-
-  const auth_code = await page_mailsac.evaluate(el => el.innerHTML, await page_mailsac.$('body > div > div.container-fluid > div.ng-scope > div > div > div > table > tbody > tr.clickable.ng-scope > td.active.not-clickable > div.ng-binding.ng-scope > p > code'));
+  const auth_code = await page_guerrillamail.evaluate(getAuthCode)
 
   await page_proton.bringToFront();
 
@@ -95,11 +111,13 @@ async function createAccount() {
   await page_proton.click('body > div.app-root > main > main > div > div.pt2.mb2 > div > div.w100 > div:nth-child(2) > form > div > div > div:nth-child(4) > button')
 
   let table = await new Table({
-  head: [chalk.green('Username'), chalk.green('Password'), chalk.green('Email')],
-  chars: { 'top': '═' , 'top-mid': '╤' , 'top-left': '╔' , 'top-right': '╗'
-         , 'bottom': '═' , 'bottom-mid': '╧' , 'bottom-left': '╚' , 'bottom-right': '╝'
-         , 'left': '║' , 'left-mid': '╟' , 'mid': '─' , 'mid-mid': '┼'
-         , 'right': '║' , 'right-mid': '╢' , 'middle': '│' }
+    head: [chalk.green('Username'), chalk.green('Password'), chalk.green('Email')],
+    chars: {
+      'top': '═', 'top-mid': '╤', 'top-left': '╔', 'top-right': '╗'
+      , 'bottom': '═', 'bottom-mid': '╧', 'bottom-left': '╚', 'bottom-right': '╝'
+      , 'left': '║', 'left-mid': '╟', 'mid': '─', 'mid-mid': '┼'
+      , 'right': '║', 'right-mid': '╢', 'middle': '│'
+    }
   });
 
   await table.push([user, pasw, mail]);
