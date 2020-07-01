@@ -56,7 +56,6 @@ async function createAccount() {
   });
 
   const browser = await puppeteer.launch({
-    headless: false,
     args: ['--disable-web-security', '--disable-features=IsolateOrigins,site-per-process', '--disable-dev-shm-usage']
   });
 

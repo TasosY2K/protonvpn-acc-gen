@@ -1,6 +1,6 @@
 {
   "name": "protonvpn-acc-gen",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "ProtonVPN account generator",
   "main": "./bin/app.js",
   "scripts": {
