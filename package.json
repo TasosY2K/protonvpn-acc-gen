@@ -11,6 +11,11 @@
   },
   "author": "leandev",
   "license": "ISC",
+  "keywords": [
+    "protonvpn", 
+    "generator", 
+    "account"
+  ],
   "dependencies": {
     "boxen": "^4.2.0",
     "chalk": "^4.0.0",
