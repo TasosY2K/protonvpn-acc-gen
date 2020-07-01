@@ -10,7 +10,6 @@ In case you have trouble generating an account open an issue.
 
 This is an unofficial tool and is not affiliated in any way with **Proton Technologies AG**
 
-
 # Usage
 
 Install and use with `npm` or `npx`

@@ -5,12 +5,8 @@ const chalk = require('chalk');
 const boxen = require('boxen');
 const Table = require('cli-table');
 
-const func = require('./functions.js');
-
 const guerrillamail_url = 'https://www.guerrillamail.com/en';
 const proton_url = 'https://account.protonvpn.com/signup';
-
-let proxy_url;
 
 let options = {
   confirmation: {
@@ -39,10 +35,19 @@ const getAuthCode = () => {
   }
 }
 
-async function createAccount() {
+const createRandomString = length => {
+  let result = '';
+  let characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let charactersLength = characters.length;
+  for (let i = 0; i < length; i++) {
+    result += characters.charAt(Math.floor(Math.random() * charactersLength));
+  }
+  return result;
+}
 
-  let user = func.createRandomString(12);
-  let pasw = func.createRandomString(32);
+async function createAccount() {
+  let user = createRandomString(12);
+  let pasw = createRandomString(32);
 
   await inquirer.prompt(options.confirmation).then(async a => {
     if (!a.confirmation) {
@@ -51,6 +56,7 @@ async function createAccount() {
   });
 
   const browser = await puppeteer.launch({
+    headless: false,
     args: ['--disable-web-security', '--disable-features=IsolateOrigins,site-per-process', '--disable-dev-shm-usage']
   });
 
@@ -84,11 +90,10 @@ async function createAccount() {
   const email_iframe = await email_iframe_element.contentFrame();
   const email_element = await email_iframe.$('#email');
 
-  await username_element.type(user);
+  await username_element.type(user, { delay: 30 });
   await page_proton.type('#password.pm-field', pasw);
   await page_proton.type('#passwordConfirmation', pasw);
-  await email_element.type(mail, { delay: 10 }); // Added delay because it failed to write
-  // the correct email
+  await email_element.type(mail, { delay: 30 });
 
   await page_proton.click('body > div > main > main > div > div.pt2.mb2 > div > div:nth-child(1) > form > div:nth-child(5) > div > button');
 
